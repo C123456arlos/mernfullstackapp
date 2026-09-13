@@ -2,8 +2,8 @@ import { Inngest } from 'inngest'
 import User from '../models/User.js'
 export const inngest = new Inngest({ id: 'new-app' })
 const syncUserCreation = inngest.createFunction(
-    { id: 'sync-user-from-clerk' },
-    { event: 'clerk/user.created' },
+    { id: 'sync-user-from-clerk' , triggers:[{ event: 'clerk/user.created' }]},
+    //  { id: 'auto-check-out' , triggers:[{ event: 'employee/check-out' }]},
     async ({ event }) => {
         const { id, first_name, last_name, email_addresses, image_url } = event.data
         let username = email_addresses[0].email_address.split('@')[0]
@@ -22,8 +22,7 @@ const syncUserCreation = inngest.createFunction(
     }
 )
 const syncUserUpdation = inngest.createFunction(
-    { id: 'update-user-from-clerk' },
-    { event: 'clerk/user.updated' },
+    { id: 'update-user-from-clerk', triggers:[{ event: 'clerk/user.updated' }] },
     async ({ event }) => {
         const { id, first_name, last_name, email_addresses, image_url } = event.data
         const updateUserData = {
@@ -35,8 +34,7 @@ const syncUserUpdation = inngest.createFunction(
     }
 )
 const syncUserDeletion = inngest.createFunction(
-    { id: 'delete-user-from-clerk' },
-    { event: 'clerk/user.deleted' },
+    { id: 'delete-user-from-clerk' , triggers:[{ event: 'clerk/user.deleted' }] },
     async ({ event }) => {
         const { id } = event.data
         await User.findByIdAndDelete(id)

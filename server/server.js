@@ -3,7 +3,8 @@ import cors from 'cors'
 import 'dotenv/config'
 import connectDB from "./configs/db.js"
 import dns from "node:dns/promises"
-import {inngest, functions} from './inngest/index.js'
+import { inngest, functions } from './inngest/index.js'
+import {serve} from 'inngest/express'
 const app = express()
 dns.setServers(["1.1.1.1"])
 await connectDB()
