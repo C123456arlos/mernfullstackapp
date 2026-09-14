@@ -1,5 +1,7 @@
 import { Inngest } from 'inngest'
 import User from '../models/User.js'
+import Connection from '../models/Connection.js'
+import sendEmail from '../configs/nodemailer.js'
 export const inngest = new Inngest({ id: 'new-app' })
 const syncUserCreation = inngest.createFunction(
     { id: 'sync-user-from-clerk' },
@@ -42,8 +44,57 @@ const syncUserDeletion = inngest.createFunction(
         await User.findByIdAndDelete(id)
     }
 )
+const sendNewConnectionRequestReminder = inngest.createFunction(
+    { id: 'send-new-connection-request-reminder' },
+    { event: 'app/connection-request' },
+    async ({event, step}) => {
+        const { connectionId } = event.data
+        await step.run('send-connection-request-email', async () => {
+            const connection = await Connection.findById(connectionId).populate('from_user_id to_user_id')
+            const subject = `new connection request`
+            const body = `
+            <div style='font-family:Arial, sans-serif; padding:20px;'>
+            <h2> hi ${connection.to_user_id.full_name} </h2>
+            <p>you have a new connection request from ${connection.from_user_id.full_name} -@{conenction.from_user_id.username}</p>
+            <p>click <a href-'${process.env.FRONTEND_URL}/connections' style='color:#10b981;'>here</a>to accept or reject the request</p>
+            <br/>
+            <p>thanks <br/> mern app stay connected</p>
+            </div>
+         `
+            await sendEmail({
+                to: connection.to_user_id.email,
+                subject,
+                body
+            })
+        })
+        const in24Hours = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        await step.sleepUntil('wait-for-24-hours', in24Hours)
+        await step.run('send-connection-request-reminder', async () => {
+            const connection = await Connection.findById(connectionId).populate('from_user_id to_user_id')
+            if (connection.status === 'accepted') {
+                return {messge:'already accepted'}
+            }
+            const subject = `new connection request`
+            const body = `
+            <div style='font-family:Arial, sans-serif; padding:20px;'>
+            <h2> hi ${connection.to_user_id.full_name} </h2>
+            <p>you have a new connection request from ${connection.from_user_id.full_name} -@{conenction.from_user_id.username}</p>
+            <p>click <a href-'${process.env.FRONTEND_URL}/connections' style='color:#10b981;'>here</a>to accept or reject the request</p>
+            <br/>
+            <p>thanks <br/> mern app stay connected</p>
+            </div>
+         `
+            await sendEmail({
+                to: connection.to_user_id.email,
+                subject,
+                body
+            })
+            return {message:'reminder sent'}
+        })
+    }
+)
 
-export const functions = [syncUserCreation, syncUserUpdation, syncUserDeletion]
+export const functions = [syncUserCreation, syncUserUpdation, syncUserDeletion, sendNewConnectionRequestReminder]
 
 
 
